@@ -62,11 +62,15 @@ public class SpamLord {
   }
   
   // Example pattern for extracting e-mail addresses
-  private Pattern ePattern = Pattern.compile("(\\w+(\\.\\w+)?)\\s*@\\s*(\\w+(\\.\\w+)?)\\.\\w{3}");
-  private Pattern pPattern = Pattern.compile("[\\.\\:]?\\s[(]?(\\d{3})[)]?[-\\s]?(\\d{3})[-\\s](\\d{4})");
-
+  private Pattern ePattern_1 = Pattern.compile("(\\w+(\\.\\w+)?)\\s*(@|\\bat\\b)\\s*(\\w+((\\.|\\bdot\\b|\\bdt\\b)\\w+)?)(\\.|\\bdot\\b|\\bdt\\b|,)\\w{3}");
+  private Pattern ePattern_3 = Pattern.compile("(\\w+)?\\sat\\s(\\w+)*\\sdt\\s([\\w]{3})");
+  
+  private Pattern ePattern_2 = Pattern.compile("obfuscate\\('(.*?)','(.*?)'\\);");
+  private Pattern ePattern_4 = Pattern.compile("([\\w\\.]+(?=\\s*\\(.*?\\))).*?\"?@([\\w\\.]*).edu(\"?|(?=&rdquo;))");
+  private Pattern ePattern_5 = Pattern.compile("(\\w+)?\\sat\\s(cs stanford edu)");
+  
+  private Pattern pPattern = Pattern.compile("[(]?(\\d{3})[)]?[-\\s]?(\\d{3})[-\\s](\\d{4}(?!\\d))");
  
-
   /* 
    * TODO
    * This should return a list of Contact objects found in the input. 
@@ -77,19 +81,61 @@ public class SpamLord {
   public List<Contact> processFile(String fileName, BufferedReader input) {
     List<Contact> contacts = new ArrayList<Contact>();
 
-
     // for each line
-    Matcher em,pm;
+    Matcher em,pm,em2,em4,em3,em5;
     String email,phone;
     try {
       for(String line = input.readLine(); line != null; line = input.readLine()) {
-        em = ePattern.matcher(line);
+//    	line = line.replaceAll("\\s*dot\\s*", ".");
+//    	line = line.replaceAll("\\s*at\\s*","@");
+
+    	line = line.replaceAll("Apache/[\\.\\d]+\\s\\(Fedora\\)\\sServer","#####");
+    	line = line.replaceAll("((?<!&lt)(?<!&#x40)|&ldquo)((;\\s*(?=edu))|(;(?=\\w)))",".");//處理以";"替代“.”的情況 和其他涉及；的
+    	line = line.replaceAll("%20", " ");                  //讀入的時候就把所有的“%20”替換成空格
+    	line = line.replaceAll("(?<!\\d+)-(?!\\d+)", "");    //解決用“-”將每一個字符鏈接起來的email，同時避免替換了phone中的“-”
+    	line = line.replace("WHERE", "at");
+    	line = line.replace("DOM", "dot");
+    	line = line.replace(" dot ", ".");
+    	line = line.replace("&#x40;","@");
+    	
+    	
+        em = ePattern_1.matcher(line);
+        em2 = ePattern_2.matcher(line);
+        
+        em4 = ePattern_4.matcher(line);
+        em3 = ePattern_3.matcher(line);
+        em5 = ePattern_5.matcher(line);
+        
         pm = pPattern.matcher(line);
+        
         while(em.find()) {
-          email = em.group(1) + "@" + em.group(3) + ".edu";
+          email = em.group(1) + "@" + em.group(4) + ".edu";
           Contact contact = new Contact(fileName,"e",email);
           contacts.add(contact);
         }
+        while(em2.find()) {
+            email = em2.group(2) + "@" + em2.group(1);
+            Contact contact = new Contact(fileName,"e",email);
+            contacts.add(contact);
+          }
+        while(em4.find()) {
+            email = em4.group(1) + "@" + em4.group(2) + ".edu";
+            Contact contact = new Contact(fileName,"e",email);
+            contacts.add(contact);
+          }
+        while(em3.find()) {
+            email = em3.group(1) + "@" + em3.group(2) + ".com";
+            Contact contact = new Contact(fileName,"e",email);
+            contacts.add(contact);
+          }
+        while(em5.find()) {
+        	
+            email = em5.group(1) + "@" + em5.group(2).replaceAll(" ", ".");
+            Contact contact = new Contact(fileName,"e",email);
+            contacts.add(contact);
+          }
+        
+
         while(pm.find()){
         	phone = pm.group(1)+"-"+pm.group(2)+"-"+pm.group(3);
         	Contact contact = new Contact(fileName,"p",phone);
@@ -214,8 +260,8 @@ public class SpamLord {
     SpamLord vader = new SpamLord();
 
     
-    List<Contact> guesses = vader.processDir("../data/dev");
-    List<Contact> gold = vader.loadGold("../data/devGOLD");
+    List<Contact> guesses = vader.processDir("data/dev");
+    List<Contact> gold = vader.loadGold("data/devGOLD");
     vader.score(guesses,gold);
   }
 }
