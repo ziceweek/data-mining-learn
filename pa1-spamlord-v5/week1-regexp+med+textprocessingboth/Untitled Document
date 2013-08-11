@@ -1,0 +1,63 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 3.4  (Linux)">
+	<META NAME="CREATED" CONTENT="0;0">
+	<META NAME="CHANGEDBY" CONTENT="cdy ">
+	<META NAME="CHANGED" CONTENT="20120427;10111000">
+</HEAD>
+<BODY LANG="en-HK" DIR="LTR">
+<P STYLE="margin-bottom: 0in">But you also need to deal with more
+complex examples created by people trying to shield their addresses,
+such as the following types of examples that I'm sure you've all
+seen: 
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in">jurafsky(at)cs.stanford.edu 
+</P>
+<P STYLE="margin-bottom: 0in">jurafsky at csli dot stanford dot edu 
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><SCRIPT>
+obfuscate('stanford.edu','jurafsky')
+</SCRIPT>For
+all of the above you should return the corresponding email address 
+</P>
+<P STYLE="margin-bottom: 0in">jurafsky@stanford.edu OR
+jurafsky@cs.stanford.edu OR jurafsky@csli.stanford.edu as
+appropriate.</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in">Email: jurafsky([( /()]?at[
+/)]?/1)cs(li)?[.(/bdot/b)]stanford[.(/bdot/b)]edu$</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in">Similarly, for phone numbers, you need
+to handle examples like the following: 
+</P>
+<P STYLE="margin-bottom: 0in">TEL +1-650-723-0293 
+</P>
+<P STYLE="margin-bottom: 0in">Phone: (650) 723-0293 
+</P>
+<P STYLE="margin-bottom: 0in">Tel (+1): 650-723-0293</P>
+<P STYLE="margin-bottom: 0in"><A HREF="contact.html">TEL</A>
++1 650 723 0293 
+</P>
+<P STYLE="margin-bottom: 0in">all of which should return the
+following canonical form: 650-723-0293 
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in">phone: \(?[2-9]\d\d\)?[
+-]?[2-9]\d\d-\d{4} 
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+</BODY>
+</HTML>
