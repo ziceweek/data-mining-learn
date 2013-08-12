@@ -19,42 +19,62 @@ public class NaiveBayes {
     public static boolean FILTER_STOP_WORDS = false; // this gets set in main()
     private static List<String> stopList = readFile(new File("../data/english.stop"));
 
-    public static HashMap<String, Integer> Example = new HashMap<String, Integer>();
-    private Object e;
+    public  HashMap<String, Integer> Example_pos = new HashMap<String, Integer>();
+    public  HashMap<String, Integer> Example_neg = new HashMap<String, Integer>();
+    //pos和neg文档计数
+    public HashMap<String,Integer> klass_stat = new HashMap<String, Integer>();
 
+    public int pos_words_count = 0;
+    public int neg_words_count = 0;
+    
     //TODO
 
     /**
      * Put your code for adding information to your NB classifier here
      */
-    public void addExample(String klass, List<String> words) {
-        int count;                                        //计算出每个词出现的次数并存入哈希图
-        for (String word : words) {
-            if (NaiveBayes.Example.containsKey(word))
+    public void  addExample(String klass, List<String> words) {
+    	
+        //统计pos类和neg类分别有多少
+        if(klass_stat.containsKey(klass)){
+        	int count = klass_stat.get(klass);
+        	count++;
+        	klass_stat.put(klass, count);
+        }else{
+        	klass_stat.put(klass, 1);
+        }     
+    	
+        int count_pos;
+        int count_neg;                      //计算出每个词出现的次数并存入哈希图
+        for (String word : words ) {
+            if (klass.equals("pos"))
             {
-                count = Example.get(word);
-                count++;
-                Example.put(word, count);
+            	pos_words_count++;
+            	if(Example_pos.containsKey(word))
+                {
+            		count_pos = Example_pos.get(word);
+                    count_pos++;
+                    Example_pos.put(word, count_pos);
+                }else {
+                    Example_pos.put(word, 1);
+                }
             }
-            else {
-                Example.put(word, 0);
-            }
+            else
+            {
+            	    neg_words_count++;
+                	if(Example_neg.containsKey(word)){
+	                    count_neg = Example_neg.get(word);
+	                    count_neg++;
+	                    Example_neg.put(word, count_neg);
+                	}
+                    else {
+                        Example_neg.put(word, 1);
+                      }
+                }
+            
         }
-        //选出出现次数前20的词
-        Set Example_set;
-        Example_set = Example.keySet();
-        String[] Example_Array = new String[20];
-        Object e = Example_set.toArray();
-        for (int i = 0; i < 20; i++) {
-            for (int j = 0; j < Example.size(); j++) {
+}
 
-
-            }
-
-
-        }
-
-    }
+    
 
 
     //TODO
@@ -64,8 +84,62 @@ public class NaiveBayes {
      * Currently, it just randomly chooses "pos" or "negative"
      */
     public String classify(List<String> words) {
+    	
+    	//先验概率
+    	int total = klass_stat.get("pos")+klass_stat.get("neg");
+    	double pos_pref = (klass_stat.get("pos")+0.00)/(total+0.00);
+    	double neg_pref = (klass_stat.get("neg")+0.00)/(total+0.00);
+    	
+    	//拉普拉斯平滑系数
+    	double laplace = 1;
+    	
+    	//取得训练集中词的种类数
+    	int n_pos =  Example_pos.size();
+    	int n_neg =  Example_neg.size();  
+    	
+    	//每个单词的条件概率中间变量
+    	double f_pos=0.00;
+    	double f_neg=0.00;
 
-        if (new Random().nextDouble() < 0.5) {
+    	//条件概率的乘积
+    	double s_pos =1.00;
+    	double s_neg =1.00;
+    	
+    	for(String word:words){
+    		
+    		//计算单词在积极文档中的条件概率
+    		//如果该单词未在积极文档训练集中出现，就默认频率为 0.01
+    		if(Example_pos.containsKey(word)){
+//    			System.out.println(Example_pos.get(word)+"/"+(pos_words_count+n_pos));
+    			f_pos = (Example_pos.get(word)+laplace)/(pos_words_count+n_pos*laplace+0.00);
+    		}else{
+    			f_pos = laplace /(pos_words_count+n_pos*laplace+0.00) ;
+    		}
+    		
+    	    s_pos=s_pos*f_pos*10000;
+    	    System.out.println(s_pos+"*");
+    	    
+    		
+    	    //计算单词在消极文档中的条件概率
+    		//如果该单词未在消极文档训练集中出现，就默认频率为 0.01
+    		if(Example_neg.containsKey(word)){
+//    			System.out.println(Example_neg.get(word)+"/"+(neg_words_count+n_neg));
+    			f_neg = (Example_neg.get(word)+laplace)/(neg_words_count+n_neg*laplace+0.00);
+    		}else{
+    			 f_neg= laplace /(neg_words_count+n_neg*laplace+0.00);
+    		}
+    		
+    		s_neg=s_neg*f_neg*10000;
+    		System.out.println(s_neg+"*");
+    	}
+    	
+    	//计算后验概率
+    	double pos_lagf = s_pos*pos_pref;
+    	double neg_lagf = s_neg*neg_pref;
+    	
+    	System.out.println("pos:"+pos_lagf+"  neg:"+neg_lagf);
+    	
+        if (pos_lagf>neg_lagf) {
             return "pos";
         } else {
             return "neg";
@@ -336,9 +410,9 @@ public class NaiveBayes {
         //分出训练集和测试集
         List<TrainSplit> splits = buildSplits(otherArgs);
 
-
         double avgAccuracy = 0.0;
         int fold = 0;
+        
         for (TrainSplit split : splits) {
             NaiveBayes classifier = new NaiveBayes();
             double accuracy = 0.0;
@@ -348,17 +422,29 @@ public class NaiveBayes {
                 //读取文件的单词和分类
                 String klass = file.getParentFile().getName();
                 List<String> words = readFile(file);
-
+               
                 if (FILTER_STOP_WORDS) {
                     words = filterStopWords(words);
                 }
-
                 //训练方法
                 classifier.addExample(klass, words);
             }
-
-
-
+            
+//            Iterator iter_pos = classifier.Example_pos.entrySet().iterator(); 
+//            while (iter_pos.hasNext()) { 
+//            	Map.Entry<String,Integer> entry = (Map.Entry<String,Integer>) iter_pos.next();
+//                String key = entry.getKey();
+//                int val = entry.getValue();
+//                System.out.println("pos:"+key+":"+val);
+//            } 
+//           
+//            Iterator iter_neg = classifier.Example_pos.entrySet().iterator(); 
+//            while (iter_neg.hasNext()) { 
+//            	Map.Entry<String,Integer> entry = (Map.Entry<String,Integer>) iter_neg.next();
+//                String key = entry.getKey();
+//                int val = entry.getValue();
+//                System.out.println("neg:"+key+":"+val);
+//            } 
 
             //遍历测试集
             for (File file : split.test) {
